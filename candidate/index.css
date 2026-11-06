@@ -1,0 +1,17 @@
+/* style.css */
+.company-logo {
+    width: 48px; 
+    height: 48px; 
+    font-weight: bold;
+}
+
+.job-title-truncate {
+    max-width: 220px;
+}
+
+.job-desc-truncate {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
