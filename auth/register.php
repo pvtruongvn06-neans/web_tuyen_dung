@@ -22,20 +22,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $vai_tro  = $_POST['vai_tro'];
     $sdt      = trim($_POST['sdt']);
 
-    try {
-        // Tên bảng trong CSDL là `nguoidung` (chữ thường)
-        $stmt = $conn->prepare("INSERT INTO nguoidung (ho_ten, email, mat_khau, vai_tro, sdt) VALUES (?, ?, ?, ?, ?)");
-        $stmt->bind_param("sssss", $ho_ten, $email, $mat_khau, $vai_tro, $sdt);
+    // Kiểm tra nghiêm ngặt: Phải đúng toàn là số và chiều dài đúng chuẩn 10 ký tự
+    if (!preg_match('/^[0-9]+$/', $sdt) || strlen($sdt) !== 10) {
+        $message = "Số điện thoại không hợp lệ! Vui lòng nhập đúng chính xác 10 chữ số.";
+    } else {
+        // Nếu hợp lệ mới tiến hành cho phép lưu vào CSDL
+        try {
+            $stmt = $conn->prepare("INSERT INTO nguoidung (ho_ten, email, mat_khau, vai_tro, sdt) VALUES (?, ?, ?, ?, ?)");
+            $stmt->bind_param("sssss", $ho_ten, $email, $mat_khau, $vai_tro, $sdt);
 
-        if ($stmt->execute()) {
-            header("Location: login.php?msg=registered");
-            exit;
-        }
-    } catch (mysqli_sql_exception $e) {
-        if ($e->getCode() === 1062) { // 1062 là mã lỗi trùng lặp (Duplicate entry)
-            $message = "Email này đã được đăng ký! Vui lòng dùng email khác hoặc chuyển sang Đăng nhập.";
-        } else {
-            $message = "Có lỗi xảy ra: " . $e->getMessage();
+            if ($stmt->execute()) {
+                header("Location: login.php?msg=registered");
+                exit;
+            }
+        } catch (mysqli_sql_exception $e) {
+            if ($e->getCode() === 1062) {
+                $message = "Email này đã được đăng ký! Vui lòng dùng email khác.";
+            } else {
+                $message = "Có lỗi xảy ra: " . $e->getMessage();
+            }
         }
     }
 }
@@ -58,11 +63,11 @@ include_once __DIR__ . '/../includes/header.php';
                 <form method="POST" action="">
                     <div class="mb-3">
                         <label class="form-label small fw-semibold">Họ và tên:</label>
-                        <input type="text" name="ho_ten" class="form-control" required placeholder="Nguyễn Văn A">
+                        <input type="text" name="ho_ten" class="form-control" required placeholder="Nguyễn Văn A" value="<?= htmlspecialchars($_POST['ho_ten'] ?? '') ?>">
                     </div>
                     <div class="mb-3">
                         <label class="form-label small fw-semibold">Email:</label>
-                        <input type="email" name="email" class="form-control" required placeholder="name@example.com">
+                        <input type="email" name="email" class="form-control" required placeholder="name@example.com" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
                     </div>
                     <div class="row g-2 mb-3">
                         <div class="col-6">
@@ -71,14 +76,14 @@ include_once __DIR__ . '/../includes/header.php';
                         </div>
                         <div class="col-6">
                             <label class="form-label small fw-semibold">Số điện thoại:</label>
-                            <input type="text" name="sdt" class="form-control" placeholder="0901234567">
+                            <input type="text" name="sdt" class="form-control" required placeholder="0901234567" pattern="[0-9]{10}" title="Số điện thoại phải bao gồm đúng 10 chữ số" value="<?= htmlspecialchars($_POST['sdt'] ?? '') ?>">
                         </div>
                     </div>
                     <div class="mb-4">
                         <label class="form-label small fw-semibold">Bạn là:</label>
                         <select name="vai_tro" class="form-select">
-                            <option value="ung_vien">Ứng viên tìm việc</option>
-                            <option value="nha_tuyen_dung">Nhà tuyển dụng</option>
+                            <option value="ung_vien" <?= (isset($_POST['vai_tro']) && $_POST['vai_tro'] === 'ung_vien') ? 'selected' : '' ?>>Ứng viên tìm việc</option>
+                            <option value="nha_tuyen_dung" <?= (isset($_POST['vai_tro']) && $_POST['vai_tro'] === 'nha_tuyen_dung') ? 'selected' : '' ?>>Nhà tuyển dụng</option>
                         </select>
                     </div>
                     <button type="submit" class="btn btn-primary w-100 fw-semibold mb-3">Đăng ký tài khoản</button>
